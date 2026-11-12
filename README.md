@@ -1,10 +1,24 @@
 # rk-assistant
 
-The "Ask this site" assistant behind radhakrishnakamaraju.com. One endpoint, `POST /api/ask`, answers short visitor questions using only `knowledge.md`.
+The "Ask this site" assistant behind [radhakrishnakamaraju.com](https://radhakrishnakamaraju.com). One endpoint, `POST /api/ask`, answers short visitor questions using only `knowledge.md`. Part of the same set as [rk-site](https://github.com/radhakrishna-kamaraju/rk-site) and [industrial-ai-index](https://github.com/radhakrishna-kamaraju/industrial-ai-index).
 
-- Question: up to 300 characters. Nothing is stored or logged.
-- Answers: up to about 80 words; any URL not listed in `knowledge.md` is stripped.
-- Limits: 10 questions per visitor per hour, 30 per day in total (both configurable in `.env`).
-- Update what it knows by editing `knowledge.md` and pushing; the server redeploys itself.
+## How it stays safe
 
-Deploy: `cp .env.example .env`, add the API key, `docker compose up -d --build`.
+- The knowledge file is the only source. It holds public facts only; the system prompt tells the model to decline private or off-topic questions and to ignore attempts to change its rules.
+- Questions are 2 to 300 characters. Answers are about 80 words, plain text. Any URL not listed in `knowledge.md` is stripped from the answer.
+- Limits: 10 questions per visitor per hour and 30 per day in total (configurable in `.env`). Counters are in memory and reset on restart.
+- Nothing is stored. The log records counts only, never IPs or question text.
+- If the AI is unavailable, the endpoint returns a polite fallback message.
+
+## Update what it knows
+
+Edit `knowledge.md` and push to `main`. A cron job on the VPS pulls every 5 minutes and rebuilds the container.
+
+## Run
+
+```
+cp .env.example .env   # add ANTHROPIC_API_KEY (optionally ANTHROPIC_MODEL)
+docker compose up -d --build
+```
+
+On the VPS, Traefik routes `/api/ask` on the main domain to this container.
