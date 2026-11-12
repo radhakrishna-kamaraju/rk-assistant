@@ -34,6 +34,10 @@ A small team of AI agents that help RK run his days. One new agent joins each mo
 ## Beyond work
 Fashion photography is RK's other craft. It taught him to look carefully before he builds. The work is at Apertures by RK: https://aperturesbyrk.com
 
+## Résumé
+RK's one-page résumé is available as a PDF: https://radhakrishnakamaraju.com/Radhakrishna-Kamaraju-Resume.pdf
+It lists his roles at Tech Mahindra (client names are not published), education, certifications and selected projects.
+
 ## Elsewhere
 - LinkedIn: https://www.linkedin.com/in/radhakrishna-kamaraju/
 - GitHub: https://github.com/radhakrishna-kamaraju
