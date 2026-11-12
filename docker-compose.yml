@@ -1,0 +1,14 @@
+services:
+  rk-assistant:
+    build: .
+    container_name: rk-assistant
+    restart: unless-stopped
+    env_file: .env
+    # No published ports: Traefik routes /api/ask on the main domain here.
+    labels:
+      - traefik.enable=true
+      - traefik.http.services.rk-assistant.loadbalancer.server.port=3000
+      - traefik.http.routers.rk-assistant.rule=(Host(`radhakrishnakamaraju.com`) || Host(`www.radhakrishnakamaraju.com`)) && PathPrefix(`/api/ask`)
+      - traefik.http.routers.rk-assistant.priority=100
+      - traefik.http.routers.rk-assistant.entrypoints=websecure
+      - traefik.http.routers.rk-assistant.tls.certresolver=letsencrypt
