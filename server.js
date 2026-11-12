@@ -117,7 +117,10 @@ async function handleAsk(req, res) {
 
   // The proxy in front appends the real client address last.
   const ip = String(req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',').pop().trim();
-  if (!allow(ip)) return sendJson(res, 429, { error: 'rate_limited' });
+  const ok = allow(ip);
+  // Counts only: no addresses, no question text.
+  console.log(`ask ${ok ? 'allowed' : 'limited'} ip_hits=${(hits.get(ip) || []).length} day_total=${dayCount} xff_entries=${String(req.headers['x-forwarded-for'] || '').split(',').filter(Boolean).length} distinct_ips=${hits.size}`);
+  if (!ok) return sendJson(res, 429, { error: 'rate_limited' });
 
   try {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
