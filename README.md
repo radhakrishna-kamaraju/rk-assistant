@@ -8,7 +8,7 @@ The "Ask this site" assistant behind [radhakrishnakamaraju.com](https://radhakri
 - Questions are 2 to 300 characters. Answers are about 80 words, plain text. Any URL not listed in `knowledge.md` is stripped from the answer.
 - Limits: 10 questions per visitor per hour and 30 per day in total (configurable in `.env`). Counters are in memory and reset on restart.
 - Nothing is stored. The log records counts only, never IPs or question text.
-- If the AI is unavailable, the endpoint returns a polite fallback message.
+- If the AI is unavailable, the endpoint returns an error and the page shows a polite "try again" message.
 
 ## Update what it knows
 
