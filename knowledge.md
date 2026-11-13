@@ -16,6 +16,11 @@ A free AI readiness assessment for manufacturers, live at https://industrial-ai.
 - It does not store answers. Answers are sent to Anthropic's Claude API only to write the report. No email is required.
 - The four areas are inspired by Microsoft's e-book "The Industrial Frontier: Four ways manufacturers can modernize across the value chain". The questions, scoring and reports are RK's own. It is an independent project, not affiliated with or endorsed by Microsoft.
 
+### AI Upskilling Planner
+A free 8-week AI upskilling plan for busy IT professionals, on this site: https://radhakrishnakamaraju.com/upskill/
+- Six questions, about 90 seconds, no sign-up. The visitor gets weekly tasks built around the work they already do, 2 to 3 hours a week.
+- Six role tracks: Builders, Quality engineers, Analysts and product owners, Delivery leads, Portfolio leaders, Operations.
+
 ### Personal OS
 A small team of AI agents that help RK run his days. One new agent joins each month, starting with a social media manager. Follow along on LinkedIn: https://www.linkedin.com/in/radhakrishna-kamaraju/
 

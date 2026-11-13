@@ -1,4 +1,5 @@
-// "Ask this site": answers visitor questions from knowledge.md only.
+// "Ask this site": answers visitor questions from knowledge.md plus the site's
+// own generated knowledge-site.md (fetched live, so site updates flow in).
 // The browser sends one short question. The prompt is built here, so the
 // API key cannot be used for anything else. Nothing is stored or logged.
 'use strict';
@@ -15,11 +16,22 @@ const PER_IP_PER_HOUR = Number(process.env.RATE_PER_IP_PER_HOUR || 10);
 const DAILY_CAP = Number(process.env.DAILY_CAP || 30);
 const MAX_Q = 300;
 
-const KNOWLEDGE = fs.readFileSync(path.join(__dirname, 'knowledge.md'), 'utf8');
-// Only URLs that appear in the knowledge file may appear in an answer.
-const ALLOWED_URLS = new Set(KNOWLEDGE.match(/https?:\/\/[^\s)]+/g) || []);
+const BASE_KNOWLEDGE = fs.readFileSync(path.join(__dirname, 'knowledge.md'), 'utf8');
+// rk-site generates this file on every deploy from its real pages. We re-fetch it
+// periodically, so pushing to rk-site updates this assistant with no change here.
+const SITE_KNOWLEDGE_URL = process.env.SITE_KNOWLEDGE_URL || 'https://radhakrishnakamaraju.com/knowledge-site.md';
+const REFRESH_MS = Number(process.env.KNOWLEDGE_REFRESH_MINUTES || 15) * 60_000;
+const MAX_SITE_KNOWLEDGE = 40_000;
+let siteKnowledge = '';
+let KNOWLEDGE = BASE_KNOWLEDGE;
+// Only URLs that appear in the knowledge may appear in an answer.
+let ALLOWED_URLS = new Set();
+let SYSTEM = '';
 
-const SYSTEM = `You are the assistant on RK's personal website (radhakrishnakamaraju.com). You are an AI, not RK, and you never pretend to be him; refer to him as "RK".
+function buildSystem() {
+  KNOWLEDGE = siteKnowledge ? `${BASE_KNOWLEDGE}\n\n${siteKnowledge}` : BASE_KNOWLEDGE;
+  ALLOWED_URLS = new Set(KNOWLEDGE.match(/https?:\/\/[^\s)]+/g) || []);
+  SYSTEM = `You are the assistant on RK's personal website (radhakrishnakamaraju.com). You are an AI, not RK, and you never pretend to be him; refer to him as "RK".
 
 Answer ONLY from the SITE KNOWLEDGE below. If the answer is not there, say you only know what is on this site and suggest RK's LinkedIn page. Never guess, invent, or add facts about RK, his employers or clients.
 Rules:
@@ -30,6 +42,27 @@ Rules:
 
 SITE KNOWLEDGE:
 ${KNOWLEDGE}`;
+}
+buildSystem();
+
+// Keep the last good copy if the site is unreachable or returns something odd.
+async function refreshSiteKnowledge() {
+  try {
+    const r = await fetch(SITE_KNOWLEDGE_URL, { signal: AbortSignal.timeout(10_000) });
+    if (!r.ok) throw new Error('status ' + r.status);
+    const text = (await r.text()).trim();
+    if (text.length < 50 || text.length > MAX_SITE_KNOWLEDGE || !text.startsWith('##')) throw new Error('unexpected content');
+    if (text !== siteKnowledge) {
+      siteKnowledge = text;
+      buildSystem();
+      console.log(`site knowledge updated (${text.length} bytes)`);
+    }
+  } catch (e) {
+    console.error('site knowledge refresh failed:', e.message);
+  }
+}
+refreshSiteKnowledge();
+setInterval(refreshSiteKnowledge, REFRESH_MS).unref();
 
 // ---- rate limiting (in memory; resets when the container restarts) ----
 const hits = new Map();
