@@ -127,13 +127,20 @@ function parseQuestion(body) {
 }
 
 // Remove any URL that is not in the knowledge file, and any markdown.
+// Allowed URLs are set aside before markdown is stripped, so a '#' anchor or an '_'
+// inside a link survives.
 function cleanAnswer(text) {
+  const kept = [];
   return text
+    .replace(/[]/g, '')
     .replace(/https?:\/\/[^\s)]+/g, (u) => {
       const bare = u.replace(/[.,;:!?]+$/, '');
-      return ALLOWED_URLS.has(bare) ? u : '';
+      if (!ALLOWED_URLS.has(bare)) return '';
+      kept.push(u);
+      return '' + (kept.length - 1) + '';
     })
     .replace(/[*#`_]{1,3}/g, '')
+    .replace(/(\d+)/g, (_, i) => kept[Number(i)])
     .trim()
     .slice(0, 900);
 }

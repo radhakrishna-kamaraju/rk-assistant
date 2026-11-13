@@ -52,6 +52,8 @@ The rule I followed: **anything that can be enforced in code is enforced in code
 
 **Visitors were hitting the rate limit too early.** During launch testing, the limit kicked in after fewer questions than it should have. Rather than guess, I added logging of counts only (hits per visitor, total per day, number of forwarded-address entries, distinct visitors), still with no addresses or question text. The log showed the limiter was counting correctly: the page was occasionally sending the same question twice, which used up the allowance twice as fast. The fix was in the page, not the server: [rk-site](https://github.com/radhakrishna-kamaraju/rk-site) now ignores a second submit while a question is in flight, which also protects visitors who double-click.
 
+**Links with an anchor came out broken.** To remove markdown, the server stripped every `#`, `*`, `_` and backtick from the answer, including those inside links. A link like `…/rk-site#what-broke-and-whats-next` lost its `#` and pointed nowhere. Allowed links are now set aside before the markdown is stripped, then put back. I found it while adding the [Shipped log](https://radhakrishnakamaraju.com/shipped/), whose entries link to sections of these READMEs.
+
 **Next:**
 - Keep the rate-limit counters across restarts.
 - Add a small evaluation set (questions with expected behaviour: answer, decline, refuse) and run it automatically before each deploy, so a change to the prompt or knowledge can't quietly break a guard.
