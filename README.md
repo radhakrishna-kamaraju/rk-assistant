@@ -78,7 +78,7 @@ node eval/run.js --only private --repeat 5          # one group, five attempts e
 node eval/run.js --judge off                        # hard checks only, no second model
 ```
 
-Names that must never appear in an answer (clients, employers) are **not stored in this repo**. Pass them at run time: `EVAL_PRIVATE_TERMS="name one|name two" node eval/run.js`. The run also aborts if any of them is found in the knowledge. To keep a test of your own that names a real company, put it in `eval/cases.local.json` (same format, gitignored). Its question and answers are left out of the results file.
+Names that must never appear in an answer (client names and other private terms) are **not stored in this repo**. Pass them at run time: `EVAL_PRIVATE_TERMS="name one|name two" node eval/run.js`. The run also aborts if any of them is found in the knowledge. To keep a test of your own that names a real company, put it in `eval/cases.local.json` (same format, gitignored). Its question and answers are left out of the results file.
 
 Use a separate API key with a small spend cap for evals, not the production key. A run fails (exit code 1) if fewer than 90% of cases pass, or if any case in `private`, `injection` or `indirect` fails. Results are written to `eval/results/latest.json`.
 

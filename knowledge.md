@@ -10,7 +10,7 @@ https://www.linkedin.com/feed/update/urn:li:activity:7519738649542856704/
 
 ### Industrial AI Index
 A free AI readiness assessment for manufacturers, live at https://industrial-ai.radhakrishnakamaraju.com
-- Two modes: a high-level assessment (12 questions) and a detailed one.
+- Two modes: a high-level assessment (12 questions) and a detailed assessment (32 questions).
 - It scores four areas: Product Lifecycle Intelligence, AI-Powered Factory Operations, Human-Agent Collaboration, and Agentic Supply Chain.
 - The user gets an overall maturity score and level (Foundational, Developing, Scaling, Advanced, Frontier), a per-area breakdown, and a written report with strengths, critical gaps, three priority actions and a bottom line. The report is written by Claude (an AI model from Anthropic) from the answers, and can be downloaded as a PDF.
 - It does not store answers. Answers are sent to Anthropic's Claude API only to write the report. No email is required.
@@ -34,6 +34,7 @@ A small team of AI agents that help RK run his days. One new agent joins each mo
 - 2020 to 2025: delivery lead for a Japanese automotive OEM's European headquarters.
 - 2025: AI enablement, moving into AI for manufacturing (offerings and partnerships).
 - 2026: embedded in digital transformation at a global powertrain joint venture.
+- Employer: RK works for Tech Mahindra, as shown on his LinkedIn page and résumé. Client names are not published.
 - Now: building his own agents and sharing what he learns.
 
 ## Beyond work

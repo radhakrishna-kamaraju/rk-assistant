@@ -51,6 +51,13 @@ test('buildPayload: is what production sends', () => {
   assert.ok(p.system.includes('example.org/readme'));
 });
 
+test('the prompt names the public employer and the Industrial AI Index question counts', () => {
+  server.setSiteKnowledge(sample);
+  const sys = server.buildPayload('hi there').system;
+  assert.ok(sys.includes('Tech Mahindra'));
+  assert.ok(/12 questions/.test(sys) && /32 questions/.test(sys));
+});
+
 test('the hand-written knowledge file holds none of the private terms in EVAL_PRIVATE_TERMS', (t) => {
   if (!lib.privateTerms()) return t.skip('EVAL_PRIVATE_TERMS not set');
   const k = fs.readFileSync(path.join(__dirname, '..', 'knowledge.md'), 'utf8');
