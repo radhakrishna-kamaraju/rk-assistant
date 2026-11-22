@@ -27,7 +27,7 @@ A small team of AI agents that help RK run his days. One new agent joins each mo
 ## Notes
 - Physical AI learning log (Nov 2026): what RK studied, tested and still does not understand. https://lnkd.in/p/erqigS6D
 - Building a personal AI assistant in ten days (Oct 2026 series): https://www.linkedin.com/feed/update/urn:li:activity:7519738649542856704/
-- buildwithRKAI: RK's newsletter, coming soon. Issue 1 is not published yet.
+- buildwithRKAI: RK's fortnightly newsletter on LinkedIn. Edition 1, "Why I stopped collecting AI courses and started building", is published: https://www.linkedin.com/pulse/edition-1-why-i-stopped-collecting-ai-courses-started-kamaraju-msjpc
 
 ## Journey
 - Before 2020: automotive IT, where he learned how large programmes really work.
