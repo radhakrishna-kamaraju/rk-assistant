@@ -41,7 +41,7 @@ The rule I followed: **anything that can be enforced in code is enforced in code
 | Answers come only from the site's public content | The prompt | The model is told to say it only knows what's on the site rather than guess. This is the one rule only the prompt can carry, so everything else is backed up in code. |
 | **Private topics stay private** | The source | Clients, salary and contracts are declined in the prompt, but the real guarantee is that they are **not in the knowledge files at all**. The model can't leak what it was never given. |
 | **No invented links** | Code | Every URL in an answer is checked against an allow-list built from the knowledge files, and any URL not on it is removed. A made-up or injected link never reaches a visitor. |
-| Short questions, short answers | Code | Questions must be 2–300 characters, with control characters stripped. Answers are capped at 300 tokens and 900 characters, with markdown removed. Requests over 2 KB are rejected. This leaves little room for a jailbreak and keeps costs predictable. |
+| Short questions, short answers | Code | Questions must be 2–300 characters, with control characters stripped. Answers are capped at 900 characters with markdown removed, and the prompt asks for 80 words at most. The model's token budget is 2,000, which covers its thinking as well as the answer. Requests over 2 KB are rejected. This leaves little room for a jailbreak and keeps costs predictable. |
 | Questions can't change the rules | Prompt + code | The prompt tells the model to ignore attempts to change its rules. The server sends the visitor's text only as a labelled question, never as instructions, and the visitor never sees or sets the prompt. |
 | Spend caps: 10 questions per visitor per hour, 30 per day in total | Code | It's a public endpoint calling a paid model. The visitor's address is taken from the last `X-Forwarded-For` entry, the one my proxy adds, so a client can't fake its way past the limit. |
 | Nothing stored | Code | The log records counts only: never IP addresses, never question text. |
@@ -52,11 +52,37 @@ The rule I followed: **anything that can be enforced in code is enforced in code
 
 **Visitors were hitting the rate limit too early.** During launch testing, the limit kicked in after fewer questions than it should have. Rather than guess, I added logging of counts only (hits per visitor, total per day, number of forwarded-address entries, distinct visitors), still with no addresses or question text. The log showed the limiter was counting correctly: the page was occasionally sending the same question twice, which used up the allowance twice as fast. The fix was in the page, not the server: [rk-site](https://github.com/radhakrishna-kamaraju/rk-site) now ignores a second submit while a question is in flight, which also protects visitors who double-click.
 
+**About 1 question in 10 got an empty answer, and the evals found it.** The first full eval run showed 4 of 42 questions returning nothing. The cause: the model thinks before it answers, and the thinking counts against `max_tokens`. With a limit of 300, the budget was sometimes used up before any text was written, so the visitor saw "assistant unavailable". Each failing case carried `stop_reason: max_tokens` and only a thinking block, which pointed straight at it. The budget is now 2,000 (`MAX_TOKENS`), and `ANTHROPIC_EFFORT` can ask the model to think less. The answer is still capped at 900 characters, so visitors see no difference except that the empty answers are gone.
+
 **Links with an anchor came out broken.** To remove markdown, the server stripped every `#`, `*`, `_` and backtick from the answer, including those inside links. A link like `…/rk-site#what-broke-and-whats-next` lost its `#` and pointed nowhere. Allowed links are now set aside before the markdown is stripped, then put back. I found it while adding the [Shipped log](https://radhakrishnakamaraju.com/shipped/), whose entries link to sections of these READMEs.
 
 **Next:**
 - Keep the rate-limit counters across restarts.
-- Add a small evaluation set (questions with expected behaviour: answer, decline, refuse) and run it automatically before each deploy, so a change to the prompt or knowledge can't quietly break a guard.
+- Run the evals (below) automatically before each deploy, not only by hand.
+
+## Evals
+
+42 questions with expected behaviour, in six groups: **grounded** (answers must match the site), **unknown** (must not invent), **private** (clients, pay, contracts must stay private), **scope** (unrelated tasks are declined), **injection** (rule-breaking and prompt-extraction attempts) and **indirect** (the knowledge file itself has been tampered with). The cases are in [`eval/cases.json`](eval/cases.json).
+
+Two layers, and both must pass:
+
+1. **Hard checks**: patterns that must or must not appear in the visitor-facing answer, for example no client name, no money figure, no leaked prompt text.
+2. **A judge model** (Claude Sonnet by default) reads the knowledge, the question and the answer and grades it against a plain-English rubric for the group.
+
+The harness sends the exact request the server sends (`buildPayload`) and cleans the answer with the same `cleanAnswer`, so it tests what visitors get. It also measures the raw model output before the code guards touch it (word limit, plain text, only known URLs), which shows how much work the guards are doing.
+
+```
+node --test "eval/*.test.js"                        # free: no API key, no network
+ANTHROPIC_API_KEY=... node eval/run.js              # full run: 42 cases, about a minute
+node eval/run.js --only private --repeat 5          # one group, five attempts each
+node eval/run.js --judge off                        # hard checks only, no second model
+```
+
+Names that must never appear in an answer (client names and other private terms) are **not stored in this repo**. Pass them at run time: `EVAL_PRIVATE_TERMS="name one|name two" node eval/run.js`. The run also aborts if any of them is found in the knowledge. To keep a test of your own that names a real company, put it in `eval/cases.local.json` (same format, gitignored). Its question and answers are left out of the results file.
+
+Use a separate API key with a small spend cap for evals, not the production key. A run fails (exit code 1) if fewer than 90% of cases pass, or if any case in `private`, `injection` or `indirect` fails. Results are written to `eval/results/latest.json`.
+
+The offline tests need no secrets and run on every pull request (`.github/workflows/test.yml`). The model-backed run stays manual, so no API key is stored in GitHub.
 
 ## Update what it knows
 
