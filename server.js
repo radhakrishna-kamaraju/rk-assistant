@@ -15,6 +15,11 @@ const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-5-5';
 const PER_IP_PER_HOUR = Number(process.env.RATE_PER_IP_PER_HOUR || 10);
 const DAILY_CAP = Number(process.env.DAILY_CAP || 30);
 const MAX_Q = 300;
+// max_tokens covers the model's thinking AND its answer. Haiku 5.5 thinks by default, so a small limit
+// can be used up before any text is written, which gave visitors an empty answer (found by the evals).
+const MAX_TOKENS = Number(process.env.MAX_TOKENS || 2000);
+// Optional: ANTHROPIC_EFFORT=low | medium | high asks the model to think less. Unset keeps the model default.
+const EFFORT = (process.env.ANTHROPIC_EFFORT || '').trim();
 
 const BASE_KNOWLEDGE = fs.readFileSync(path.join(__dirname, 'knowledge.md'), 'utf8');
 // rk-site generates this file on every deploy from its real pages. We re-fetch it
@@ -61,8 +66,10 @@ async function refreshSiteKnowledge() {
     console.error('site knowledge refresh failed:', e.message);
   }
 }
-refreshSiteKnowledge();
-setInterval(refreshSiteKnowledge, REFRESH_MS).unref();
+if (require.main === module) {
+  refreshSiteKnowledge();
+  setInterval(refreshSiteKnowledge, REFRESH_MS).unref();
+}
 
 // ---- rate limiting (in memory; resets when the container restarts) ----
 const hits = new Map();
@@ -145,6 +152,13 @@ function cleanAnswer(text) {
     .slice(0, 900);
 }
 
+// The exact request sent to the model. The eval harness uses this too, so it tests what production sends.
+function buildPayload(q) {
+  const payload = { model: MODEL, max_tokens: MAX_TOKENS, system: SYSTEM, messages: [{ role: 'user', content: 'Visitor question: ' + q }] };
+  if (EFFORT) payload.output_config = { effort: EFFORT };
+  return payload;
+}
+
 async function handleAsk(req, res) {
   let q;
   try {
@@ -166,7 +180,7 @@ async function handleAsk(req, res) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', ...(WORKSPACE_ID ? { 'anthropic-workspace-id': WORKSPACE_ID } : {}) },
-      body: JSON.stringify({ model: MODEL, max_tokens: 300, system: SYSTEM, messages: [{ role: 'user', content: 'Visitor question: ' + q }] }),
+      body: JSON.stringify(buildPayload(q)),
       signal: AbortSignal.timeout(20_000),
     });
     if (!r.ok) {
@@ -184,12 +198,29 @@ async function handleAsk(req, res) {
   }
 }
 
-http
-  .createServer((req, res) => {
-    if (req.url === '/api/ask') {
-      if (req.method !== 'POST') return sendJson(res, 405, { error: 'method_not_allowed' });
-      return void handleAsk(req, res);
-    }
-    res.writeHead(404).end();
-  })
-  .listen(PORT, () => console.log(`rk-assistant listening on ${PORT} (AI answers ${API_KEY ? 'on' : 'off: no API key'}, model ${MODEL})`));
+if (require.main === module) {
+  http
+    .createServer((req, res) => {
+      if (req.url === '/api/ask') {
+        if (req.method !== 'POST') return sendJson(res, 405, { error: 'method_not_allowed' });
+        return void handleAsk(req, res);
+      }
+      res.writeHead(404).end();
+    })
+    .listen(PORT, () => console.log(`rk-assistant listening on ${PORT} (AI answers ${API_KEY ? 'on' : 'off: no API key'}, model ${MODEL})`));
+}
+
+// For the tests and the eval harness in eval/. Not used in production.
+module.exports = {
+  MODEL,
+  MAX_TOKENS,
+  parseQuestion,
+  cleanAnswer,
+  buildPayload,
+  setSiteKnowledge(text) {
+    siteKnowledge = text;
+    buildSystem();
+  },
+  getKnowledge: () => KNOWLEDGE,
+  getAllowedUrls: () => ALLOWED_URLS,
+};
