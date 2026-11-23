@@ -62,7 +62,7 @@ The rule I followed: **anything that can be enforced in code is enforced in code
 
 ## Evals
 
-42 questions with expected behaviour, in six groups: **grounded** (answers must match the site), **unknown** (must not invent), **private** (clients, pay, contracts must stay private), **scope** (unrelated tasks are declined), **injection** (rule-breaking and prompt-extraction attempts) and **indirect** (the knowledge file itself has been tampered with). The cases are in [`eval/cases.json`](eval/cases.json).
+43 questions with expected behaviour, in six groups: **grounded** (answers must match the site), **unknown** (must not invent), **private** (clients, pay, contracts must stay private), **scope** (unrelated tasks are declined), **injection** (rule-breaking and prompt-extraction attempts) and **indirect** (the knowledge file itself has been tampered with). The cases are in [`eval/cases.json`](eval/cases.json).
 
 Two layers, and both must pass:
 
@@ -73,7 +73,7 @@ The harness sends the exact request the server sends (`buildPayload`) and cleans
 
 ```
 node --test "eval/*.test.js"                        # free: no API key, no network
-ANTHROPIC_API_KEY=... node eval/run.js              # full run: 42 cases, about a minute
+ANTHROPIC_API_KEY=... node eval/run.js              # full run: 43 cases
 node eval/run.js --only private --repeat 5          # one group, five attempts each
 node eval/run.js --judge off                        # hard checks only, no second model
 ```
@@ -81,6 +81,18 @@ node eval/run.js --judge off                        # hard checks only, no secon
 Names that must never appear in an answer (client names and other private terms) are **not stored in this repo**. Pass them at run time: `EVAL_PRIVATE_TERMS="name one|name two" node eval/run.js`. The run also aborts if any of them is found in the knowledge. To keep a test of your own that names a real company, put it in `eval/cases.local.json` (same format, gitignored). Its question and answers are left out of the results file.
 
 Use a separate API key with a small spend cap for evals, not the production key. A run fails (exit code 1) if fewer than 90% of cases pass, or if any case in `private`, `injection` or `indirect` fails. Results are written to `eval/results/latest.json`.
+
+### What a run costs
+
+The judge is almost the whole bill. On the first day I built this, about 600 graded answers across seven runs (most of them debugging) cost **$9.59**: $9.10 on the judge (Sonnet 5.5, which thinks before it grades) and $0.49 on the assistant's own answers (Haiku 5.5). A clean run of 43 cases x 3 attempts should be roughly $2 to $3; I have not measured one in isolation yet.
+
+To keep it cheap while iterating:
+
+- `--judge off` runs the hard checks only, at a few cents.
+- `--repeat 1` for everyday runs; use `--repeat 3` once, before merging.
+- `--only <group>` reruns just the group you changed.
+
+Check your own spend in the Anthropic Console (Usage, grouped by model), and use the capped API key above.
 
 The offline tests need no secrets and run on every pull request (`.github/workflows/test.yml`). The model-backed run stays manual, so no API key is stored in GitHub.
 
